@@ -4,29 +4,35 @@ require "open-uri"
 
 module RSSendy
   class Feed
+    PROPERTIES = %i(
+      api_key url template content from_name from_email reply_to
+      subject plain_text html_text list_ids brand_id send_campaign
+    )
+
     class <<self
-      def api_key(key=nil)
-        return @__api_key__ unless key
-        @__api_key__ = key
+      PROPERTIES.each do |property|
+        class_eval <<-ENDEVAL
+        def #{property}(val=nil)
+          return @__#{property}__ unless val
+          @__#{property}__ = val
+        end
+        ENDEVAL
       end
 
-      def url(_url=nil)
-        return @__url__ unless _url
-        @__url__ = _url
-      end
-
-      def content(&cont_blk)
-        return @__cont_blk__ unless block_given?
-        @__cont_blk__ = cont_blk
-      end
-
-      def template(&tmpl_blk)
-        return @__tmpl_blk__ unless block_given?
-        @__tmpl_blk__ = tmpl_blk
+      def content(cont=nil)
+        return @__cont_blk__ unless cont
+        @__cont_blk__ = ->(doc) {doc.instance_eval(cont.sub(/^doc\./, ''))}
       end
     end
 
-    attr_reader :response, :doc, :items
+    def initialize(opts={})
+      PROPERTIES.each do |property|
+        send("#{property}=", opts[property] || self.class.send(property))
+      end
+    end
+
+    attr_accessor(*PROPERTIES)
+    attr_reader :response, :doc, :items, :html_template
 
     def pull!
       @response = open(url).read
@@ -34,20 +40,13 @@ module RSSendy
       @items = content[@doc]
     end
 
-    def api_key
-      self.class.api_key
+    def build_template
+      tmpl = ERB.new(File.read(template))
+      @html_template = tmpl.result(binding)
     end
 
-    def url
-      self.class.url
-    end
-
-    def content
-      self.class.content
-    end
-
-    def template
-      self.class.template
+    def post
+      sendy = Cindy.new url, api_key
     end
   end
 end

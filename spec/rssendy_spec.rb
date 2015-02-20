@@ -5,13 +5,8 @@ RSpec.describe RSSendy::Feed do
     Class.new(RSSendy::Feed) do
       api_key "hellothar"
       url "http://hello.com"
-      content {|doc| doc.xpath('//content:encoded').map(&:text).map(&:strip)}
-      template do |items|
-        "<table>".tap do |html|
-          items.each {|item| html << item}
-          html << "</table>"
-        end
-      end
+      content %Q[doc.xpath('//content:encoded').map(&:text).map(&:strip)]
+      template File.expand_path("../tmpl.html.erb", __FILE__)
     end
   end
 
@@ -60,17 +55,28 @@ RSpec.describe RSSendy::Feed do
   end
 
   it "exposes :template" do
-    expect(subject.template[subject.content[doc]]).to eql("<table>#{content}</table>")
+    expect(subject.template).to eql(File.expand_path('../tmpl.html.erb', __FILE__))
   end
 
   it "exposes :template to instances" do
-    expect(subject.new.template[subject.content[doc]]).to eql("<table>#{content}</table>")
+    expect(subject.new.template).to eql(File.expand_path('../tmpl.html.erb', __FILE__))
   end
 
   describe 'instance' do
-    describe '#pull!' do
-      let(:feed) { subject.new }
+    let(:feed) { subject.new }
 
+    describe '#build_template' do
+      before do
+        allow(feed).to receive(:items).and_return(['hello thar'])
+        feed.build_template
+      end
+
+      it 'builds :html_template' do
+        expect(feed.html_template).to match(%r{<table>((.|\n)*)hello thar((.|\n)*)</table>})
+      end
+    end
+
+    describe '#pull!' do
       before do
         allow(feed).to receive_message_chain(:open, :read).and_return(rss)
         feed.pull!
