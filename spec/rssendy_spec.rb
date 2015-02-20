@@ -3,7 +3,7 @@ require "spec_helper"
 RSpec.describe RSSendy::Feed do
   subject do
     Class.new(RSSendy::Feed) do
-
+      api_key "hellothar"
       url "http://hello.com"
       content {|doc| doc.xpath('//content:encoded').map(&:text).map(&:strip)}
       template do |items|
@@ -34,6 +34,14 @@ RSpec.describe RSSendy::Feed do
   let(:doc) { Nokogiri(rss) }
 
   let(:content) { "<tr><td>hello</td></tr>"}
+
+  it "exposes :api_key" do
+    expect(subject.api_key).to eql('hellothar')
+  end
+
+  it "exposes :api_key to instances" do
+    expect(subject.new.api_key).to eql('hellothar')
+  end
 
   it "exposes :url" do
     expect(subject.url).to eql('http://hello.com')

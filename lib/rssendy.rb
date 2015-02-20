@@ -5,6 +5,11 @@ require "open-uri"
 module RSSendy
   class Feed
     class <<self
+      def api_key(key=nil)
+        return @__api_key__ unless key
+        @__api_key__ = key
+      end
+
       def url(_url=nil)
         return @__url__ unless _url
         @__url__ = _url
@@ -27,6 +32,10 @@ module RSSendy
       @response = open(url).read
       @doc = Nokogiri(@response)
       @items = content[@doc]
+    end
+
+    def api_key
+      self.class.api_key
     end
 
     def url
