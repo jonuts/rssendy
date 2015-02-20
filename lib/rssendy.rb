@@ -1,11 +1,14 @@
+require 'bundler/setup'
 require "rssendy/version"
 require "nokogiri"
 require "open-uri"
+require "cindy"
+require "erb"
 
 module RSSendy
   class Feed
     PROPERTIES = %i(
-      api_key url template from_name from_email reply_to
+      api_key url template host from_name from_email reply_to
       subject plain_text html_text list_ids brand_id send_campaign
     )
 
@@ -53,7 +56,7 @@ module RSSendy
     end
 
     def post
-      sendy = Cindy.new url, api_key
+      sendy = ::Cindy.new host, api_key
       sendy.create_campaign(build_opts)
     end
 
@@ -66,7 +69,7 @@ module RSSendy
         reply_to: reply_to,
         subject: subject,
         html_text: build_template
-      }.tap {|opt|
+      }.tap {|opts|
         %i(plain_text list_ids brand_id send_campaign).each do |property|
           val = send(property)
           opts[property] = val if val

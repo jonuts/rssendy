@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+
+require './lib/rssendy'
+require 'slop'
+require 'yaml'
+
+opts = Slop.parse do
+  on 'C', 'config=', 'Path to RSSendy YAML config file'
+  on 'k', 'key=', 'Sendy API Key'
+  on 'u', 'url=', 'URL of sendy app'
+  on 'c', 'content=', 'Nokogiri parser for RSS items'
+  on 'p', 'path=', 'Path to template file'
+  on 'N', 'from-name=', 'Email "from" field'
+  on 'E', 'from-email=', 'Email "email" field'
+  on 'R', 'reply-to=', 'Email "reply-to" field'
+  on 'S', 'subject=', 'Email "subject" field'
+  on 'T', 'plain-text=', 'Email plain text version'
+  on 'I', 'list-ids=', 'Sendy list ids (comma separated) to send to'
+  on 'B', 'brand-id=', 'Sendy Brand ID'
+  on 's', 'send-campaign=', 'Send campaign or not (default false)'
+  on 'version', 'print the version' do
+    puts RSSendy::VERSION
+    exit
+  end
+end
+
+if opts[:config]
+  config = YAML::load(File.read(opts[:config]))
+else
+  config = {}
+end
+
+%i(
+  url path from-name from-email reply-to
+  subject plain-text list-ids brand-id send-campaign
+).each do |opt|
+  config[opt.to_s.split("-").join("_")] = opts[opt] if opts[opt]
+end
+
+config[:api_key] ||= opts[:key]
+
+
+feed = RSSendy::Feed.new(config)
+feed.pull!
+feed.post
