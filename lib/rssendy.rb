@@ -21,11 +21,12 @@ module RSSendy
       end
     end
 
-    attr_reader :response, :doc
+    attr_reader :response, :doc, :items
 
     def pull!
       @response = open(url).read
       @doc = Nokogiri(@response)
+      @items = content[@doc]
     end
 
     def url

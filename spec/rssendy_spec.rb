@@ -5,7 +5,7 @@ RSpec.describe RSSendy::Feed do
     Class.new(RSSendy::Feed) do
 
       url "http://hello.com"
-      content {|doc| doc.at_xpath('//content:encoded').text.strip}
+      content {|doc| doc.xpath('//content:encoded').map(&:text).map(&:strip)}
       template do |items|
         "<table>".tap do |html|
           items.each {|item| html << item}
@@ -44,19 +44,19 @@ RSpec.describe RSSendy::Feed do
   end
 
   it "exposes :content" do
-    expect(subject.content[doc]).to eql(content)
+    expect(subject.content[doc]).to eql([content])
   end
 
   it "exposes :content to instances" do
-    expect(subject.new.content[doc]).to eql(content)
+    expect(subject.new.content[doc]).to eql([content])
   end
 
   it "exposes :template" do
-    expect(subject.template[[subject.content[doc]]]).to eql("<table>#{content}</table>")
+    expect(subject.template[subject.content[doc]]).to eql("<table>#{content}</table>")
   end
 
   it "exposes :template to instances" do
-    expect(subject.new.template[[subject.content[doc]]]).to eql("<table>#{content}</table>")
+    expect(subject.new.template[subject.content[doc]]).to eql("<table>#{content}</table>")
   end
 
   describe 'instance' do
@@ -74,6 +74,10 @@ RSpec.describe RSSendy::Feed do
 
       it "sets :doc" do
         expect(feed.doc.to_html).to eql(doc.to_html)
+      end
+
+      it "sets :items" do
+        expect(feed.items).to eql([content])
       end
     end
   end
