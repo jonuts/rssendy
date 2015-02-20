@@ -5,7 +5,7 @@ require "open-uri"
 module RSSendy
   class Feed
     PROPERTIES = %i(
-      api_key url template content from_name from_email reply_to
+      api_key url template from_name from_email reply_to
       subject plain_text html_text list_ids brand_id send_campaign
     )
 
@@ -29,10 +29,17 @@ module RSSendy
       PROPERTIES.each do |property|
         send("#{property}=", opts[property] || self.class.send(property))
       end
+      @content = opts.fetch(:content, self.class.content)
     end
 
     attr_accessor(*PROPERTIES)
     attr_reader :response, :doc, :items, :html_template
+
+    def content
+      return @content if Proc === @content
+      _cont = @content.dup
+      @content = ->(doc) { doc.instance_eval(_cont.sub(/^doc\./, '')) }
+    end
 
     def pull!
       @response = open(url).read
