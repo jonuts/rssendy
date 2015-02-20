@@ -54,6 +54,24 @@ module RSSendy
 
     def post
       sendy = Cindy.new url, api_key
+      sendy.create_campaign(build_opts)
+    end
+
+    private
+
+    def build_opts
+      {
+        from_name: from_name,
+        from_email: from_email,
+        reply_to: reply_to,
+        subject: subject,
+        html_text: build_template
+      }.tap {|opt|
+        %i(plain_text list_ids brand_id send_campaign).each do |property|
+          val = send(property)
+          opts[property] = val if val
+        end
+      }
     end
   end
 end
