@@ -124,7 +124,7 @@ module RSSendy
         from_name: from_name,
         from_email: from_email,
         reply_to: reply_to,
-        subject: rss_subject? ? parse_subject : subject,
+        subject: rss_subject? ? subject[doc] : subject,
         html_text: build_template
       }.tap {|opts|
         %i(plain_text list_ids brand_id send_campaign).each do |property|
@@ -132,10 +132,6 @@ module RSSendy
           opts[property] = val if val
         end
       }
-    end
-
-    def parse_subject
-      doc.instance_eval(subject)
     end
   end
 end
