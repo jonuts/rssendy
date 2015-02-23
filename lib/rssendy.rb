@@ -11,7 +11,9 @@ module RSSendy
       api_key url template host from_name from_email reply_to
       subject plain_text html_text list_ids brand_id send_campaign
     }
-    REQUIREMENTS = %i(api_key content url template host from_name from_email reply_to subject html_text)
+    REQUIREMENTS = %i(api_key content url template host from_name from_email reply_to subject)
+
+    InvalidFeedError = Class.new(RuntimeError)
 
     class <<self
       PROPERTIES.each do |property|
@@ -46,17 +48,23 @@ module RSSendy
     end
 
     def pull!
+      raise InvalidFeedError, "Feed invalid. Missing keys: #{missing_keys.inspect}" unless valid?
+
       @response = open(url).read
       @doc = Nokogiri(@response)
       @items = content[@doc]
     end
 
     def build_template
+      raise InvalidFeedError, "No template set" unless template
+
       tmpl = ERB.new(File.read(template))
       @html_template = tmpl.result(binding)
     end
 
     def post
+      raise InvalidFeedError, "Feed invalid. Missing keys: #{missing_keys.inspect}" unless valid?
+
       sendy = ::Cindy.new host, api_key
       sendy.create_campaign(build_opts)
     end
@@ -80,6 +88,10 @@ module RSSendy
           opts[property] = val if val
         end
       }
+    end
+
+    def missing_keys
+      REQUIREMENTS.reject {|prop| send(prop)}
     end
   end
 end

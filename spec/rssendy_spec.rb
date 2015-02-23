@@ -7,6 +7,11 @@ RSpec.describe RSSendy::Feed do
       url "http://hello.com"
       content %Q[doc.xpath('//content:encoded').map(&:text).map(&:strip)]
       template File.expand_path("../tmpl.html.erb", __FILE__)
+      host "http://mysendyapp.com/sendy"
+      from_name "root"
+      from_email "root@mysendyapp"
+      reply_to from_email
+      subject "latest news"
     end
   end
 
@@ -29,6 +34,8 @@ RSpec.describe RSSendy::Feed do
   let(:doc) { Nokogiri(rss) }
 
   let(:content) { "<tr><td>hello</td></tr>"}
+
+  let(:invalid_err) { RSSendy::Feed::InvalidFeedError}
 
   it "exposes :api_key" do
     expect(subject.api_key).to eql('hellothar')
@@ -66,32 +73,66 @@ RSpec.describe RSSendy::Feed do
     let(:feed) { subject.new }
 
     describe '#build_template' do
-      before do
-        allow(feed).to receive(:items).and_return(['hello thar'])
-        feed.build_template
+      context "when valid" do
+        before do
+          allow(feed).to receive(:items).and_return(['hello thar'])
+          feed.build_template
+        end
+
+        it 'builds :html_template' do
+          expect(feed.html_template).to match(%r{<table>((.|\n)*)hello thar((.|\n)*)</table>})
+        end
       end
 
-      it 'builds :html_template' do
-        expect(feed.html_template).to match(%r{<table>((.|\n)*)hello thar((.|\n)*)</table>})
+      context "when invalid" do
+        before do
+          feed.template = nil
+        end
+
+        it "throws an error" do
+          expect { feed.build_template }.to raise_error(invalid_err)
+        end
       end
     end
 
     describe '#pull!' do
-      before do
-        allow(feed).to receive_message_chain(:open, :read).and_return(rss)
-        feed.pull!
+      context "when valid" do
+        before do
+          allow(feed).to receive_message_chain(:open, :read).and_return(rss)
+          feed.pull!
+        end
+
+        it "sets :response" do
+          expect(feed.response).to eql(rss)
+        end
+
+        it "sets :doc" do
+          expect(feed.doc.to_html).to eql(doc.to_html)
+        end
+
+        it "sets :items" do
+          expect(feed.items).to eql([content])
+        end
       end
 
-      it "sets :response" do
-        expect(feed.response).to eql(rss)
-      end
+      context "when invalid" do
+        before { feed.url = nil }
 
-      it "sets :doc" do
-        expect(feed.doc.to_html).to eql(doc.to_html)
+        it "throws an error" do
+          expect { feed.pull! }.to raise_error(invalid_err)
+        end
       end
+    end
 
-      it "sets :items" do
-        expect(feed.items).to eql([content])
+    describe "#post" do
+      context "when valid"
+
+      context "when invalid" do
+        before { feed.host = nil }
+
+        it "throws an error" do
+          expect { feed.post }.to raise_error(invalid_err)
+        end
       end
     end
   end
