@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require './lib/rssendy'
+require_relative '../lib/rssendy'
 require 'slop'
 require 'yaml'
 
