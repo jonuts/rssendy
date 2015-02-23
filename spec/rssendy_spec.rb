@@ -19,6 +19,9 @@ RSpec.describe RSSendy::Feed do
     <<-RSS
 <rss xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0">
   <channel>
+    <title>
+      why, hello thar
+    </title>
     <item>
       <content:encoded>
         <![CDATA[
@@ -72,6 +75,24 @@ RSpec.describe RSSendy::Feed do
   describe 'instance' do
     let(:feed) { subject.new }
 
+    describe "setting subject" do
+      context "when rss_subject false" do
+        it "has subject set manually" do
+          expect(feed.subject).to eql("latest news")
+        end
+      end
+
+      context "when rss_subject true" do
+        before do
+          feed.subject = 'doc.at_xpath("//title").text.strip'
+          feed.rss_subject = true
+        end
+
+        it "pulls subject from feed" do
+          expect(feed.subject[doc]).to eql("why, hello thar")
+        end
+      end
+    end
     describe '#build_template' do
       context "when valid" do
         before do

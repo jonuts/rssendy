@@ -29,7 +29,7 @@ module RSSendy
   class Feed
     PROPERTIES = %i{
       api_key url template host from_name from_email reply_to
-      subject plain_text html_text list_ids brand_id send_campaign
+      plain_text html_text list_ids brand_id send_campaign rss_subject
     }
     REQUIREMENTS = %i(api_key content url template host from_name from_email reply_to subject)
 
@@ -49,22 +49,38 @@ module RSSendy
         return @__cont_blk__ unless cont
         @__cont_blk__ = ->(doc) {doc.instance_eval(cont.sub(/^doc\./, ''))}
       end
+
+      def subject(subj=nil)
+        return @__subject__ unless subj
+        @__subject__ = subj
+      end
     end
 
     def initialize(opts={})
       PROPERTIES.each do |property|
         send("#{property}=", opts[property] || self.class.send(property))
       end
+      @subject = opts.fetch(:subject, self.class.subject)
       @content = opts.fetch(:content, self.class.content)
+      @rss_subject = !!rss_subject
     end
 
     attr_accessor(*PROPERTIES)
     attr_reader :response, :doc, :items, :html_template
+    attr_writer :subject
 
     def content
       return @content if Proc === @content || @content.nil?
       _cont = @content.dup
       @content = ->(doc) { doc.instance_eval(_cont.sub(/^doc\./, '')) }
+    end
+
+    def subject
+      return @subject unless rss_subject? && !(Proc === @subject)
+      return unless @subject
+
+      _subj = @subject.dup
+      @subject = ->(doc) { doc.instance_eval(_subj.sub(/^doc\./, '')) }
     end
 
     def pull!
@@ -99,12 +115,16 @@ module RSSendy
 
     private
 
+    def rss_subject?
+      rss_subject
+    end
+
     def build_opts
       {
         from_name: from_name,
         from_email: from_email,
         reply_to: reply_to,
-        subject: subject,
+        subject: rss_subject? ? parse_subject : subject,
         html_text: build_template
       }.tap {|opts|
         %i(plain_text list_ids brand_id send_campaign).each do |property|
@@ -112,6 +132,10 @@ module RSSendy
           opts[property] = val if val
         end
       }
+    end
+
+    def parse_subject
+      doc.instance_eval(subject)
     end
   end
 end
