@@ -7,10 +7,11 @@ require "erb"
 
 module RSSendy
   class Feed
-    PROPERTIES = %i(
+    PROPERTIES = %i{
       api_key url template host from_name from_email reply_to
       subject plain_text html_text list_ids brand_id send_campaign
-    )
+    }
+    REQUIREMENTS = %i(api_key content url template host from_name from_email reply_to subject html_text)
 
     class <<self
       PROPERTIES.each do |property|
@@ -39,7 +40,7 @@ module RSSendy
     attr_reader :response, :doc, :items, :html_template
 
     def content
-      return @content if Proc === @content
+      return @content if Proc === @content || @content.nil?
       _cont = @content.dup
       @content = ->(doc) { doc.instance_eval(_cont.sub(/^doc\./, '')) }
     end
@@ -58,6 +59,10 @@ module RSSendy
     def post
       sendy = ::Cindy.new host, api_key
       sendy.create_campaign(build_opts)
+    end
+
+    def valid?
+      REQUIREMENTS.all? {|prop| send(prop)}
     end
 
     private

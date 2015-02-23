@@ -95,5 +95,24 @@ RSpec.describe RSSendy::Feed do
       end
     end
   end
+
+  context 'validity' do
+    let(:opts) {Hash[reqs.map {|r| [r, "foo-#{r}"]}]}
+    subject { RSSendy::Feed.new(opts)}
+
+    context 'valid feed' do
+      let(:reqs) { RSSendy::Feed::REQUIREMENTS }
+      it { is_expected.to be_valid }
+    end
+
+    context 'invalid feed' do
+      RSSendy::Feed::REQUIREMENTS.each do |req|
+        describe "missing #{req}" do
+          let(:reqs) { RSSendy::Feed::REQUIREMENTS.reject {|r| r == req}}
+          it { is_expected.to_not be_valid}
+        end
+      end
+    end
+  end
 end
 
