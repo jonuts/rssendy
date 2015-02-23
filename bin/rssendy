@@ -4,7 +4,7 @@ require './lib/rssendy'
 require 'slop'
 require 'yaml'
 
-opts = Slop.parse do
+opts = Slop.parse help: true do
   on 'C', 'config=', 'Path to RSSendy YAML config file'
   on 'k', 'key=', 'Sendy API Key'
   on 'u', 'url=', 'URL of sendy app'
@@ -39,7 +39,9 @@ end
 
 config[:api_key] ||= opts[:key]
 
-
 feed = RSSendy::Feed.new(config)
+
+abort "Feed invalid. Missing fields: #{feed.missing_keys.inspect}" unless feed.valid?
+
 feed.pull!
 feed.post

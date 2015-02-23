@@ -73,6 +73,10 @@ module RSSendy
       REQUIREMENTS.all? {|prop| send(prop)}
     end
 
+    def missing_keys
+      REQUIREMENTS.reject {|prop| send(prop)}
+    end
+
     private
 
     def build_opts
@@ -88,10 +92,6 @@ module RSSendy
           opts[property] = val if val
         end
       }
-    end
-
-    def missing_keys
-      REQUIREMENTS.reject {|prop| send(prop)}
     end
   end
 end
