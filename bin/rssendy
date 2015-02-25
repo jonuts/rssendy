@@ -44,4 +44,4 @@ feed = RSSendy::Feed.new(config)
 abort "Feed invalid. Missing fields: #{feed.missing_keys.inspect}" unless feed.valid?
 
 feed.pull!
-feed.post
+puts feed.post
